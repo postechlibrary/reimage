@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Resizer · 최대 가로 1024px 또는 10MB 이하</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --primary: #6366f1;
+      --primary-light: #8b5cf6;
+      --primary-dark: #4f46e5;
+      --secondary: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      
+      --bg-primary: #fafafa;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f8fafc;
+      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      
+      --border: #e5e7eb;
+      --border-light: #f3f4f6;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header .subtitle {
+      font-size: 1.2rem;
+      font-weight: 300;
+      opacity: 0.9;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      color: white;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    /* Main Panel */
+    .main-panel {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border-light);
+    }
+
+    /* Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .controls-grid {
+        grid-template-columns: 2fr 1fr 1fr;
+      }
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2rem;
+      text-align: center;
+      background: var(--bg-tertiary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 40%, rgba(99, 102, 241, 0.05) 50%, transparent 60%);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .drop-zone:hover::before {
+      transform: translateX(100%);
+    }
+
+    .drop-zone.drag {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+      transform: scale(1.02);
+    }
+
+    .drop-zone h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .drop-zone p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    .drop-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.6;
+    }
+
+    /* Control Groups */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .control-group label {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      background: var(--bg-secondary);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .checkbox-group label {
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: var(--bg-tertiary);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 1rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border-light);
+      border-radius: 50px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 50px;
+      transition: width 0.3s ease;
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* File List */
+    .file-list {
+      margin-top: 2rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .file-item {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .file-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .file-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .file-thumbnail img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+    }
+
+    .file-meta {
+      min-width: 0;
+    }
+
+    .file-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      word-break: break-all;
+    }
+
+    .file-info {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .file-status {
+      text-align: right;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-success { color: var(--success); }
+    .status-warning { color: var(--warning); }
+    .status-error { color: var(--error); }
+
+    /* Info Panel */
+    .info-panel {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .info-panel summary {
+      padding: 1.5rem;
+      background: var(--bg-tertiary);
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    .info-panel summary:hover {
+      background: var(--border-light);
+    }
+
+    .info-panel[open] summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .info-content {
+      padding: 1.5rem;
+    }
+
+    .info-content ul {
+      list-style: none;
+      margin-bottom: 1rem;
+    }
+
+    .info-content li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .info-content li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .code-block {
+      background: #1a1a1a;
+      color: #e5e5e5;
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .main-panel {
+        padding: 1.5rem;
+      }
+
+      .file-item {
+        grid-template-columns: 60px 1fr;
+        gap: 0.75rem;
+      }
+
+      .file-thumbnail {
+        width: 60px;
+        height: 60px;
+      }
+
+      .file-status {
+        grid-column: 1 / -1;
+        text-align: left;
+        margin-top: 0.5rem;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .file-item {
+      animation: fadeInUp 0.3s ease;
+    }
+
+    /* Additional Modern Effects */
+    .glassmorphism {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🖼️ Image Resizer</h1>
+      <p class="subtitle">브라우저에서 안전하게 이미지를 리사이즈하고 최적화하세요</p>
+      <div class="badge">
+        📏 가로 ≤ 1024px / 💾 용량 ≤ 10MB
+      </div>
+    </header>
+
+    <main class="main-panel">
+      <div class="controls-grid">
+        <div class="control-group">
+          <label>📁 파일 선택</label>
+          <div class="drop-zone" id="drop">
+            <input type="file" id="picker" multiple accept="image/*" style="display:none" />
+            <div class="drop-icon">📸</div>
+            <h3>이미지를 드래그하여 놓으세요</h3>
+            <p>또는 아래 버튼을 클릭하여 파일을 선택하세요</p>
+            <div class="button-group">
+              <button id="choose" class="btn btn-primary">
+                📂 이미지 선택
+              </button>
+              <button id="clear" class="btn btn-secondary">
+                🗑️ 목록 지우기
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label>📐 크기 설정</label>
+          <div class="input-wrapper">
+            <input type="number" id="maxWidth" value="1024" min="64" step="1" placeholder="가로 픽셀" />
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="enforceWidth" checked />
+            <label for="enforceWidth">가로 최대치 적용</label>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label>💾 용량 설정</label>
+          <div class="input-wrapper">
+            <input type="number" id="maxSizeMB" value="10" min="1" step="1" placeholder="MB 단위" />
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="enforceSize" checked />
+            <label for="enforceSize">파일 크기 최대치 적용</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="autoConvert" checked />
+            <label for="autoConvert">🔄 PNG를 JPEG로 자동 변환</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="skipCompliant" checked />
+            <label for="skipCompliant">✅ 이미 기준 만족 시 변환 생략</label>
+          </div>
+          <div class="hint">
+            💡 변환 시 EXIF 메타데이터는 제거되며, 휴대폰 사진의 회전은 자동 보정됩니다.
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label>⚙️ 품질 설정</label>
+          <div class="input-wrapper">
+            <input type="number" id="quality" value="0.9" min="0.1" max="0.98" step="0.01" />
+          </div>
+          <div class="hint">JPEG/WebP에 적용. 용량 제한을 만족하도록 자동 조정됩니다.</div>
+        </div>
+        
+        <div class="control-group">
+          <label>📊 진행률</label>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button id="process" class="btn btn-primary" disabled>
+          🚀 리사이즈 시작
+        </button>
+        <button id="downloadAll" class="btn btn-secondary" disabled>
+          📥 모두 다운로드
+        </button>
+      </div>
+
+      <div id="list" class="file-list"></div>
+    </main>
+
+    <section class="info-panel">
+      <details>
+        <summary>🔧 작동 원리 & 제한 사항</summary>
+        <div class="info-content">
+          <ul>
+            <li>먼저 가로 길이를 제한(선택 시)하고, 그 다음 목표 용량 이하가 될 때까지 JPEG/WebP는 품질을 자동 조정합니다.</li>
+            <li>PNG는 품질 옵션이 거의 적용되지 않으므로, 용량 제한이 필요한 경우 자동으로 JPEG로 변환하도록 설정했습니다.</li>
+            <li>그래도 용량이 줄지 않으면 해상도를 추가로 줄이며, 최소 128px 이상만 유지합니다.</li>
+            <li>모든 처리는 브라우저 로컬에서 수행되며, 파일은 업로드되지 않습니다.</li>
+          </ul>
+          <div class="code-block">
+            <small>💾 10MB = 10 × 1024 × 1024 바이트 기준</small><br>
+            <small>🎯 지원 형식: JPEG, PNG, WebP</small>
+          </div>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const drop = $('#drop');
+    const picker = $('#picker');
+    const choose = $('#choose');
+    const clearBtn = $('#clear');
+    const processBtn = $('#process');
+    const downloadAllBtn = $('#downloadAll');
+    const list = $('#list');
+    const bar = $('#bar');
+
+    const enforceWidthEl = $('#enforceWidth');
+    const enforceSizeEl = $('#enforceSize');
+    const maxWidthEl = $('#maxWidth');
+    const maxSizeMBEl = $('#maxSizeMB');
+    const qualityEl = $('#quality');
+    const autoConvertEl = $('#autoConvert');
+    const skipCompliantEl = $('#skipCompliant');
+
+    /** util **/
+    const MB = 1024 * 1024;
+    const prettyBytes = (n) => {
+      if (n < 1024) return n + ' B';
+      if (n < MB) return (n / 1024).toFixed(1) + ' KB';
+      return (n / MB).toFixed(2) + ' MB';
+    };
+    const extFromMime = (mime) => ({
+      'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'
+    }[mime] || 'jpg');
+
+    let files = [];
+
+    function resetUI() {
+      list.innerHTML = '';
+      processBtn.disabled = files.length === 0;
+      downloadAllBtn.disabled = true;
+      bar.style.width = '0%';
+    }
+
+    choose.addEventListener('click', () => picker.click());
+    picker.addEventListener('change', (e) => { files = Array.from(e.target.files || []); renderList(); });
+    clearBtn.addEventListener('click', () => { files = []; picker.value = ''; resetUI(); });
+
+    ;['dragenter', 'dragover'].forEach(evt => drop.addEventListener(evt, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
+    ;['dragleave', 'drop'].forEach(evt => drop.addEventListener(evt, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
+    drop.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer; if (!dt) return;
+      files = files.concat(Array.from(dt.files || []).filter(f => f.type.startsWith('image/')));
+      renderList();
+    });
+
+    function renderList() {
+      list.innerHTML = '';
+      files.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.dataset.idx = idx;
+        item.innerHTML = `
+          <div class="file-thumbnail" id="thumb-${idx}">
+            <span>🖼️</span>
+          </div>
+          <div class="file-meta">
+            <div class="file-name">${file.name}</div>
+            <div class="file-info">원본: <span class="origSz">${prettyBytes(file.size)}</span></div>
+            <div class="file-info" id="dim-${idx}">원본 해상도: 측정 중…</div>
+          </div>
+          <div class="file-status" id="status-${idx}">대기중</div>
+        `;
+        list.appendChild(item);
+        
+        // preview
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { 
+          URL.revokeObjectURL(url); 
+          $('#thumb-' + idx).innerHTML = ''; 
+          $('#thumb-' + idx).appendChild(img); 
+          $('#dim-' + idx).textContent = `원본 해상도: ${img.naturalWidth}×${img.naturalHeight}`; 
+        };
+        img.src = url;
+      });
+      processBtn.disabled = files.length === 0;
+    }
+
+    async function loadImageWithOrientation(file) {
+      if (window.createImageBitmap) {
+        try {
+          const ib = await createImageBitmap(file, { imageOrientation: 'from-image' });
+          return { bitmap: ib, width: ib.width, height: ib.height, revoke: () => ib.close() };
+        } catch (e) {/* fallback below */ }
+      }
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => resolve({ element: img, width: img.naturalWidth, height: img.naturalHeight, revoke: () => URL.revokeObjectURL(url) });
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    function canvasFromSource(src, w, h) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if ('bitmap' in src) ctx.drawImage(src.bitmap, 0, 0, w, h); else ctx.drawImage(src.element, 0, 0, w, h);
+      return canvas;
+    }
+
+    function toBlobAsync(canvas, type, quality) {
+      return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+    }
+
+    async function compressToTarget(canvas, mime, maxBytes, qDefault) {
+      const supportsQ = /jpeg|webp/.test(mime);
+      if (!supportsQ) {
+        const blob = await toBlobAsync(canvas, mime);
+        return { blob, width: canvas.width, height: canvas.height };
+      }
+      let lo = 0.3, hi = Math.min(0.98, Math.max(0.3, qDefault || 0.9)), best = null, bestQ = hi;
+      for (let i = 0; i < 10; i++) {
+        const mid = (lo + hi) / 2;
+        const b = await toBlobAsync(canvas, mime, mid);
+        if (!b) { break }
+        if (b.size <= maxBytes) { best = b; bestQ = mid; lo = mid + 0.02; } else { hi = mid - 0.02; }
+      }
+      if (!best) { best = await toBlobAsync(canvas, mime, 0.82); bestQ = 0.82; }
+      return { blob: best, width: canvas.width, height: canvas.height, quality: bestQ };
+    }
+
+    async function processOne(file, opts, idx) {
+      const { enforceWidth, maxWidth, enforceSize, maxBytes, qDefault, autoConvert, skipCompliant } = opts;
+      const statusEl = $('#status-' + idx);
+      statusEl.textContent = '로딩 중…';
+
+      const src = await loadImageWithOrientation(file);
+      const srcW = src.width, srcH = src.height;
+
+      if (skipCompliant) {
+        const widthOk = !enforceWidth || srcW <= maxWidth;
+        const sizeOk = !enforceSize || file.size <= maxBytes;
+        if (widthOk && sizeOk) {
+          statusEl.innerHTML = `<span class="status-success">✅ 기준 충족(변환 생략)</span>`;
+          return { original: file, output: file, skipped: true };
+        }
+      }
+
+      let targetW = srcW;
+      let targetH = srcH;
+      if (enforceWidth && srcW > maxWidth) {
+        const scale = maxWidth / srcW; 
+        targetW = Math.max(1, Math.round(srcW * scale)); 
+        targetH = Math.max(1, Math.round(srcH * scale));
+      }
+      let canvas = canvasFromSource(src, targetW, targetH);
+      src.revoke && src.revoke();
+
+      let targetMime = (file.type || 'image/jpeg');
+      if (/png$/.test(file.type) && enforceSize && autoConvert) targetMime = 'image/jpeg';
+      if (!/^image\//.test(targetMime)) targetMime = 'image/jpeg';
+
+      statusEl.textContent = '압축 중…';
+      let { blob, width, height } = await compressToTarget(canvas, targetMime, maxBytes, qDefault);
+
+      let round = 0;
+      while (enforceSize && blob && blob.size > maxBytes && (width > 128 && height > 128) && round < 8) {
+        round++;
+        const scale = 0.88;
+        width = Math.max(128, Math.round(width * scale));
+        height = Math.max(128, Math.round(height * scale));
+        canvas = canvasFromSource({ element: canvas }, width, height);
+        const result = await compressToTarget(canvas, targetMime, maxBytes, qDefault - round * 0.05);
+        blob = result.blob; width = result.width; height = result.height;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const nameParts = file.name.split('.');
+      const base = nameParts.slice(0, -1).join('.') || file.name;
+      const ext = extFromMime(targetMime);
+      const outName = `${base}__resized.${ext}`;
+
+      const item = document.querySelector(`.file-item[data-idx="${idx}"]`);
+      const meta = item.querySelector('.file-meta');
+      const status = item.querySelector('.file-status');
+      meta.insertAdjacentHTML('beforeend', `<div class="file-info">결과: <b>${width}×${height}</b>, <b>${prettyBytes(blob.size)}</b></div>`);
+      
+      if (blob.size <= maxBytes || !enforceSize) {
+        status.innerHTML = `<span class="status-success">✅ 완료</span>`;
+      } else {
+        status.innerHTML = `<span class="status-warning">⚠️ 완료(용량 제한 초과)</span>`;
+      }
+
+      const dl = document.createElement('a');
+      dl.href = url; dl.download = outName; dl.textContent = '다운로드';
+      const btn = document.createElement('button'); 
+      btn.className = 'btn btn-primary';
+      btn.innerHTML = '📥 다운로드'; 
+      btn.addEventListener('click', () => dl.click());
+      item.appendChild(btn);
+
+      const th = item.querySelector('.file-thumbnail'); 
+      th.innerHTML = ''; 
+      const prev = new Image(); 
+      prev.src = url; 
+      th.appendChild(prev);
+
+      return { original: file, output: new File([blob], outName, { type: targetMime }), url };
+    }
+
+    processBtn.addEventListener('click', async () => {
+      if (files.length === 0) return;
+      processBtn.disabled = true; downloadAllBtn.disabled = true;
+      const opts = {
+        enforceWidth: enforceWidthEl.checked,
+        maxWidth: Math.max(64, Number(maxWidthEl.value) || 1024),
+        enforceSize: enforceSizeEl.checked,
+        maxBytes: Math.max(1, Number(maxSizeMBEl.value) || 10) * MB,
+        qDefault: Math.min(0.98, Math.max(0.1, Number(qualityEl.value) || 0.9)),
+        autoConvert: autoConvertEl.checked,
+        skipCompliant: skipCompliantEl.checked
+      };
+      let done = 0; const outputs = [];
+      for (let i = 0; i < files.length; i++) {
+        try {
+          const res = await processOne(files[i], opts, i);
+          outputs.push(res);
+        } catch (err) {
+          const statusEl = $('#status-' + i); 
+          statusEl.innerHTML = `<span class="status-error">❌ 실패: ${err?.message || err}</span>`;
+        }
+        done++; bar.style.width = ((done / files.length) * 100).toFixed(1) + '%';
+      }
+      downloadAllBtn.disabled = outputs.length === 0;
+      downloadAllBtn.onclick = () => {
+        outputs.forEach(o => {
+          if (!o || !o.output) return; 
+          const a = document.createElement('a'); 
+          a.href = URL.createObjectURL(o.output); 
+          a.download = o.output.name; 
+          document.body.appendChild(a); 
+          a.click(); 
+          a.remove();
+        });
+      };
+      processBtn.disabled = false;
+    });
+
+    resetUI();
+  </script>
+</body>
+</html>
